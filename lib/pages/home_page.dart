@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+
+import '../controllers/reminders_controller.dart';
 import '../routes.dart';
 
 class HomePage extends StatelessWidget {
-  const HomePage({super.key});
+  final RemindersController controller;
+
+  const HomePage({super.key, required this.controller});
 
   void _goToViewReminders(BuildContext context) {
     Navigator.of(context).pushNamed(AppRoutes.viewReminders);
@@ -30,7 +34,11 @@ class HomePage extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
-                  onPressed: () => _goToViewReminders(context),
+                  onPressed: () {
+                    // Optional: load before viewing
+                    controller.load();
+                    _goToViewReminders(context);
+                  },
                   child: const Text('View Reminders'),
                 ),
               ),
