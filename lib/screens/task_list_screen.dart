@@ -4,6 +4,7 @@ import '../models/task.dart';
 import '../services/firestore_task_service.dart';
 import '../widgets/task_dialog.dart';
 import '../widgets/task_list_tile.dart';
+import '../services/auth_service.dart';
 
 class TaskListScreen extends StatefulWidget {
   const TaskListScreen({super.key});
@@ -14,6 +15,7 @@ class TaskListScreen extends StatefulWidget {
 
 class _TaskListScreenState extends State<TaskListScreen> {
   final FirestoreTaskService _taskService = FirestoreTaskService();
+  final AuthService _authService = AuthService();
 
   TaskCategory? _selectedCategory;
   Priority? _selectedPriority;
@@ -23,13 +25,15 @@ class _TaskListScreenState extends State<TaskListScreen> {
     List<Task> filtered = List<Task>.from(tasks);
 
     if (_selectedCategory != null) {
-      filtered =
-          filtered.where((task) => task.category == _selectedCategory).toList();
+      filtered = filtered
+          .where((task) => task.category == _selectedCategory)
+          .toList();
     }
 
     if (_selectedPriority != null) {
-      filtered =
-          filtered.where((task) => task.priority == _selectedPriority).toList();
+      filtered = filtered
+          .where((task) => task.priority == _selectedPriority)
+          .toList();
     }
 
     if (!_showCompletedTasks) {
@@ -102,6 +106,13 @@ class _TaskListScreenState extends State<TaskListScreen> {
               ),
             ],
           ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Logout',
+            onPressed: () async {
+              await _authService.signOut();
+            },
+          ),
         ],
       ),
       body: StreamBuilder<List<Task>>(
@@ -120,9 +131,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
           }
 
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           final allTasks = snapshot.data ?? <Task>[];
@@ -161,8 +170,9 @@ class _TaskListScreenState extends State<TaskListScreen> {
                               _selectedPriority = selected ? priority : null;
                             });
                           },
-                          backgroundColor:
-                              _getPriorityColor(priority).withValues(alpha: 0.2),
+                          backgroundColor: _getPriorityColor(
+                            priority,
+                          ).withValues(alpha: 0.2),
                         ),
                       );
                     }),
@@ -170,8 +180,10 @@ class _TaskListScreenState extends State<TaskListScreen> {
                 ),
               ),
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8.0,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -230,11 +242,12 @@ class _TaskListScreenState extends State<TaskListScreen> {
 
                           return TaskListTile(
                             task: task,
-                            onToggle: () => _taskService.toggleTaskCompletion(task),
+                            onToggle: () =>
+                                _taskService.toggleTaskCompletion(task),
                             onDelete: () => _taskService.deleteTask(task.id),
                             onEdit: () => _showTaskDialog(context, task: task),
-                            onPriorityChange: (newPriority) =>
-                                _taskService.updateTaskPriority(task, newPriority),
+                            onPriorityChange: (newPriority) => _taskService
+                                .updateTaskPriority(task, newPriority),
                           );
                         },
                       ),

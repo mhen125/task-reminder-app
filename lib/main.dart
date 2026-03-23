@@ -2,14 +2,12 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
 import 'firebase_options.dart';
-import 'screens/task_list_screen.dart';
+import 'screens/auth_gate.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   runApp(const TaskReminderApp());
 }
@@ -22,11 +20,8 @@ class TaskReminderApp extends StatelessWidget {
     return MaterialApp(
       title: 'Task Reminders',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: true,
-      ),
-      home: const TaskListScreen(),
+      theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
+      home: AuthGate(),
     );
   }
 }
