@@ -203,15 +203,26 @@ class _TaskListScreenState extends State<TaskListScreen> {
                                     child: Text(task.description!),
                                   ),
                                 const SizedBox(height: 6),
-                                Text('Due: ${_formatDate(task.dueAt)}'),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Priority: ${task.priority}',
-                                  style: TextStyle(
-                                    color: _priorityColor(task.priority),
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 4,
+                                  children: [
+                                    Chip(
+                                      label: Text(task.category),
+                                      visualDensity: VisualDensity.compact,
+                                    ),
+                                    Chip(
+                                      label: Text(task.priority),
+                                      visualDensity: VisualDensity.compact,
+                                      labelStyle: TextStyle(
+                                        color: _priorityColor(task.priority),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
                                 ),
+                                const SizedBox(height: 6),
+                                Text('Due: ${_formatDate(task.dueAt)}'),
                                 const SizedBox(height: 4),
                                 Text(
                                   task.completed ? 'Completed' : 'Incomplete',

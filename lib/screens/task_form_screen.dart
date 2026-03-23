@@ -19,6 +19,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
 
   late final TextEditingController _titleController;
   late final TextEditingController _descriptionController;
+  late final TextEditingController _categoryController;
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
@@ -38,8 +39,8 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
     final Task? task = widget.task;
 
     _titleController = TextEditingController(text: task?.title ?? '');
-    _descriptionController =
-        TextEditingController(text: task?.description ?? '');
+    _descriptionController = TextEditingController(text: task?.description ?? '');
+    _categoryController = TextEditingController(text: task?.category ?? 'General');
 
     _selectedDueAt = task?.dueAt ?? DateTime.now().add(const Duration(hours: 1));
     _selectedPriority = task?.priority ?? 'low';
@@ -50,6 +51,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
+    _categoryController.dispose();
     super.dispose();
   }
 
@@ -108,6 +110,9 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
           description: _descriptionController.text.trim().isEmpty
               ? null
               : _descriptionController.text.trim(),
+          category: _categoryController.text.trim().isEmpty
+              ? 'General'
+              : _categoryController.text.trim(),
           dueAt: _selectedDueAt,
           priority: _selectedPriority,
           completed: _completed,
@@ -123,6 +128,9 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
           dueAt: _selectedDueAt,
           priority: _selectedPriority,
           completed: _completed,
+          category: _categoryController.text.trim().isEmpty
+              ? 'General'
+              : _categoryController.text.trim(),
         );
       }
 
@@ -185,6 +193,13 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                 ),
                 maxLines: 3,
               ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _categoryController,
+                decoration: const InputDecoration(
+                  labelText: 'Category',
+                ),
+              ),
               const SizedBox(height: 16),
               ListTile(
                 contentPadding: EdgeInsets.zero,
@@ -197,7 +212,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _selectedPriority,
+                initialValue: _selectedPriority,
                 decoration: const InputDecoration(
                   labelText: 'Priority',
                 ),

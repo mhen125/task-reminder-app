@@ -3,6 +3,7 @@ class Task {
   final int user;
   final String title;
   final String? description;
+  final String category;
   final DateTime dueAt;
   final String priority;
   final bool completed;
@@ -15,6 +16,7 @@ class Task {
     required this.user,
     required this.title,
     this.description,
+    required this.category,
     required this.dueAt,
     required this.priority,
     required this.completed,
@@ -29,6 +31,7 @@ class Task {
       user: json['user'] as int,
       title: json['title'] as String,
       description: json['description'] as String?,
+      category: (json['category'] as String?) ?? 'General',
       dueAt: DateTime.parse(json['due_at'] as String),
       priority: json['priority'] as String,
       completed: json['completed'] as bool,
@@ -44,6 +47,7 @@ class Task {
     return {
       'title': title,
       'description': description,
+      'category': category,
       'due_at': dueAt.toIso8601String(),
       'priority': priority,
       'completed': completed,
@@ -55,6 +59,7 @@ class Task {
     int? user,
     String? title,
     String? description,
+    String? category,
     DateTime? dueAt,
     String? priority,
     bool? completed,
@@ -67,6 +72,7 @@ class Task {
       user: user ?? this.user,
       title: title ?? this.title,
       description: description ?? this.description,
+      category: category ?? this.category,
       dueAt: dueAt ?? this.dueAt,
       priority: priority ?? this.priority,
       completed: completed ?? this.completed,

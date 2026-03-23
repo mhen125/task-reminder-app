@@ -5,7 +5,7 @@ import 'auth_service.dart';
 
 class ApiService {
   // static const String baseUrl = 'http://67.217.244.6/api';
-  static const String baseUrl = 'http://localhost:8001/api';
+  static const String baseUrl = 'http://localhost:8001/api';  
   final AuthService _authService = AuthService();
 
   Future<Map<String, String>> _getHeaders() async {
@@ -53,6 +53,7 @@ class ApiService {
   Future<Task> createTask({
     required String title,
     String? description,
+    required String category,
     required DateTime dueAt,
     required String priority,
     required bool completed,
@@ -66,6 +67,7 @@ class ApiService {
         body: jsonEncode({
           'title': title,
           'description': description,
+          'category': category,
           'due_at': dueAt.toIso8601String(),
           'priority': priority,
           'completed': completed,
@@ -90,6 +92,7 @@ class ApiService {
         body: jsonEncode({
           'title': task.title,
           'description': task.description,
+          'category': task.category,
           'due_at': task.dueAt.toIso8601String(),
           'priority': task.priority,
           'completed': task.completed,
