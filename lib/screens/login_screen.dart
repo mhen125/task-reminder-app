@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import 'register_screen.dart';
 import 'task_list_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -56,6 +57,14 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  void _goToRegister() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const RegisterScreen(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -97,6 +106,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     ? const CircularProgressIndicator()
                     : const Text('Login'),
               ),
+            ),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: _goToRegister,
+              child: const Text('Create an account'),
             ),
           ],
         ),

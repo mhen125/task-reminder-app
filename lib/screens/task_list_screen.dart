@@ -4,6 +4,7 @@ import '../models/task.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import 'login_screen.dart';
+import 'task_form_screen.dart';
 
 class TaskListScreen extends StatefulWidget {
   const TaskListScreen({super.key});
@@ -55,25 +56,27 @@ class _TaskListScreenState extends State<TaskListScreen> {
     }
   }
 
-  Future<void> _createTestTask() async {
-    try {
-      await _apiService.createTask(
-        title: 'Test Task from Flutter',
-        description: 'This task was created through the Flutter app.',
-        dueAt: DateTime.now().add(const Duration(hours: 2)),
-        priority: 'low',
-        completed: false,
-      );
+  Future<void> _openAddTaskScreen() async {
+    final bool? changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => const TaskFormScreen(),
+      ),
+    );
 
+    if (changed == true) {
       await _loadTasks();
-    } catch (e) {
-      if (!mounted) {
-        return;
-      }
+    }
+  }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Create failed: $e')),
-      );
+  Future<void> _openEditTaskScreen(Task task) async {
+    final bool? changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => TaskFormScreen(task: task),
+      ),
+    );
+
+    if (changed == true) {
+      await _loadTasks();
     }
   }
 
@@ -137,6 +140,10 @@ class _TaskListScreenState extends State<TaskListScreen> {
     }
   }
 
+  IconData _statusIcon(bool completed) {
+    return completed ? Icons.check_circle : Icons.radio_button_unchecked;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -154,7 +161,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _createTestTask,
+        onPressed: _openAddTaskScreen,
         child: const Icon(Icons.add),
       ),
       body: _isLoading
@@ -181,6 +188,10 @@ class _TaskListScreenState extends State<TaskListScreen> {
                             vertical: 6,
                           ),
                           child: ListTile(
+                            leading: Icon(
+                              _statusIcon(task.completed),
+                              color: task.completed ? Colors.green : null,
+                            ),
                             title: Text(task.title),
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -207,15 +218,22 @@ class _TaskListScreenState extends State<TaskListScreen> {
                                 ),
                               ],
                             ),
+                            onTap: () => _openEditTaskScreen(task),
                             trailing: PopupMenuButton<String>(
                               onSelected: (value) {
-                                if (value == 'toggle') {
+                                if (value == 'edit') {
+                                  _openEditTaskScreen(task);
+                                } else if (value == 'toggle') {
                                   _toggleTaskCompleted(task);
                                 } else if (value == 'delete') {
                                   _deleteTask(task);
                                 }
                               },
                               itemBuilder: (context) => [
+                                const PopupMenuItem<String>(
+                                  value: 'edit',
+                                  child: Text('Edit'),
+                                ),
                                 PopupMenuItem<String>(
                                   value: 'toggle',
                                   child: Text(
