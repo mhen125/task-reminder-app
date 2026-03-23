@@ -55,6 +55,9 @@ class Task {
   final DateTime? dueDate;
   final bool isDone;
   final DateTime? completedAt;
+  final int escalationThresholdDays;
+  final bool agingEnabled;
+  final DateTime? lastEscalatedAt;
 
   const Task({
     required this.id,
@@ -66,16 +69,38 @@ class Task {
     this.dueDate,
     this.isDone = false,
     this.completedAt,
+    this.escalationThresholdDays = 3,
+    this.agingEnabled = true,
+    this.lastEscalatedAt,
   });
 
   int get daysSinceCreation {
     return DateTime.now().difference(createdAt).inDays;
   }
 
-  bool shouldEscalate(int daysThreshold) {
+  int get ageInWholeDays {
+    return DateTime.now().difference(createdAt).inDays;
+  }
+
+  bool shouldEscalate() {
+    if (!agingEnabled) return false;
     if (isDone) return false;
     if (priority == Priority.urgent) return false;
-    return daysSinceCreation >= daysThreshold;
+
+    final nextTriggerDay = (priority.value + 1) * escalationThresholdDays;
+    return ageInWholeDays >= nextTriggerDay;
+  }
+
+  Task? escalatedIfNeeded() {
+    if (!shouldEscalate()) return null;
+
+    final nextPriority = priority.escalate();
+    if (nextPriority == null) return null;
+
+    return copyWith(
+      priority: nextPriority,
+      lastEscalatedAt: DateTime.now(),
+    );
   }
 
   Task copyWith({
@@ -87,6 +112,9 @@ class Task {
     Object? dueDate = _unset,
     bool? isDone,
     Object? completedAt = _unset,
+    int? escalationThresholdDays,
+    bool? agingEnabled,
+    Object? lastEscalatedAt = _unset,
   }) {
     return Task(
       id: id ?? this.id,
@@ -100,6 +128,12 @@ class Task {
       completedAt: identical(completedAt, _unset)
           ? this.completedAt
           : completedAt as DateTime?,
+      escalationThresholdDays:
+          escalationThresholdDays ?? this.escalationThresholdDays,
+      agingEnabled: agingEnabled ?? this.agingEnabled,
+      lastEscalatedAt: identical(lastEscalatedAt, _unset)
+          ? this.lastEscalatedAt
+          : lastEscalatedAt as DateTime?,
     );
   }
 
@@ -113,6 +147,11 @@ class Task {
       'dueDate': dueDate != null ? Timestamp.fromDate(dueDate!) : null,
       'isDone': isDone,
       'completedAt': completedAt != null ? Timestamp.fromDate(completedAt!) : null,
+      'escalationThresholdDays': escalationThresholdDays,
+      'agingEnabled': agingEnabled,
+      'lastEscalatedAt': lastEscalatedAt != null
+          ? Timestamp.fromDate(lastEscalatedAt!)
+          : null,
     };
   }
 
@@ -122,6 +161,7 @@ class Task {
     final createdAtValue = data['createdAt'];
     final dueDateValue = data['dueDate'];
     final completedAtValue = data['completedAt'];
+    final lastEscalatedAtValue = data['lastEscalatedAt'];
 
     return Task(
       id: doc.id,
@@ -136,6 +176,12 @@ class Task {
       isDone: (data['isDone'] ?? false) as bool,
       completedAt:
           completedAtValue is Timestamp ? completedAtValue.toDate() : null,
+      escalationThresholdDays:
+          (data['escalationThresholdDays'] ?? 3) as int,
+      agingEnabled: (data['agingEnabled'] ?? true) as bool,
+      lastEscalatedAt: lastEscalatedAtValue is Timestamp
+          ? lastEscalatedAtValue.toDate()
+          : null,
     );
   }
 }

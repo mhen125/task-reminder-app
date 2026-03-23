@@ -20,6 +20,8 @@ class TaskListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isAgingActive = task.agingEnabled && !task.isDone;
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       elevation: 2,
@@ -116,10 +118,28 @@ class TaskListTile extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      '${task.daysSinceCreation}d ago',
+                      '${task.daysSinceCreation}d old',
                       style: TextStyle(
                         fontSize: 11,
                         color: Colors.grey[700],
+                      ),
+                    ),
+                  ),
+                if (isAgingActive)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.amber[50],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.amber[300]!),
+                    ),
+                    child: Text(
+                      'Aging every ${task.escalationThresholdDays}d',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.amber[900],
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),

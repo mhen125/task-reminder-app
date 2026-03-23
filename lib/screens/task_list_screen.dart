@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../models/task.dart';
@@ -71,11 +72,26 @@ class _TaskListScreenState extends State<TaskListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Tasks'),
         elevation: 2,
         actions: [
+          if (user != null)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Center(
+                child: Tooltip(
+                  message: 'Current user ID',
+                  child: Text(
+                    user.uid.length > 8 ? user.uid.substring(0, 8) : user.uid,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+              ),
+            ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.filter_list),
             onSelected: (value) {
