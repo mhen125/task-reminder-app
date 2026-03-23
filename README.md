@@ -1,17 +1,14 @@
 # task_reminder_app
 
-A new Flutter project.
+This is the auth_page branch.
 
-## Getting Started
+## To be done:
 
-This project is a starting point for a Flutter application.
+- Enable Email/Password in Firebase
+- Set Firestore rules for authenticated users
+- Troubleshoot
+- Update style to match the rest of the app
 
-A few resources to get you started if this is your first Flutter project:
+## IMPORTANT
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+> [NOTE!] Make sure to update the README.md file before merging branches
