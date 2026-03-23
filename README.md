@@ -1,4 +1,4 @@
-# task_reminder_app
+# TASK REMINDER APP
 
 This is the auth_page branch.
 
