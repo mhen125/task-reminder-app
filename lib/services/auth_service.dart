@@ -1,40 +1,116 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:convert';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:http/http.dart' as http;
 
 class AuthService {
-  AuthService._();
+  // static const String baseUrl = 'http://67.217.244.6/api';
+  static const String baseUrl = 'http://localhost:8001/api';
+  static const FlutterSecureStorage _storage = FlutterSecureStorage();
 
-  static final AuthService instance = AuthService._();
+  static const String accessTokenKey = 'access_token';
+  static const String refreshTokenKey = 'refresh_token';
+  static const String usernameKey = 'username';
 
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  Future<bool> register({
+    required String username,
+    required String email,
+    required String password,
+  }) async {
+    final Uri url = Uri.parse('$baseUrl/register/');
 
-  Stream<User?> get authStateChanges => _auth.authStateChanges();
+    final http.Response response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'username': username,
+        'email': email,
+        'password': password,
+      }),
+    );
 
-  User? get currentUser => _auth.currentUser;
+    return response.statusCode == 201;
+  }
 
-  String? get currentUid => _auth.currentUser?.uid;
+  Future<bool> login({
+    required String username,
+    required String password,
+  }) async {
+    final Uri url = Uri.parse('$baseUrl/token/');
 
-  Future<UserCredential> signInAnonymously() async {
-    if (_auth.currentUser != null) {
-      return UserCredentialPlatformBridge.currentUserCredential(_auth.currentUser!);
+    final http.Response response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'username': username,
+        'password': password,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = jsonDecode(response.body);
+
+      await _storage.write(key: accessTokenKey, value: data['access']);
+      await _storage.write(key: refreshTokenKey, value: data['refresh']);
+      await _storage.write(key: usernameKey, value: username);
+
+      return true;
     }
 
-    return _auth.signInAnonymously();
-  }
-}
-
-class UserCredentialPlatformBridge implements UserCredential {
-  UserCredentialPlatformBridge._(this.user);
-
-  @override
-  final User? user;
-
-  static UserCredential currentUserCredential(User user) {
-    return UserCredentialPlatformBridge._(user);
+    return false;
   }
 
-  @override
-  AdditionalUserInfo? get additionalUserInfo => null;
+  Future<void> logout() async {
+    await _storage.delete(key: accessTokenKey);
+    await _storage.delete(key: refreshTokenKey);
+    await _storage.delete(key: usernameKey);
+  }
 
-  @override
-  AuthCredential? get credential => null;
+  Future<String?> getAccessToken() async {
+    return _storage.read(key: accessTokenKey);
+  }
+
+  Future<String?> getRefreshToken() async {
+    return _storage.read(key: refreshTokenKey);
+  }
+
+  Future<String?> getUsername() async {
+    return _storage.read(key: usernameKey);
+  }
+
+  Future<bool> isLoggedIn() async {
+    final String? token = await getAccessToken();
+    return token != null && token.isNotEmpty;
+  }
+
+  Future<bool> refreshAccessToken() async {
+    final String? refreshToken = await getRefreshToken();
+
+    if (refreshToken == null) {
+      return false;
+    }
+
+    final Uri url = Uri.parse('$baseUrl/token/refresh/');
+
+    final http.Response response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'refresh': refreshToken,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = jsonDecode(response.body);
+      await _storage.write(key: accessTokenKey, value: data['access']);
+      return true;
+    }
+
+    return false;
+  }
 }
