@@ -4,7 +4,8 @@ import 'package:http/http.dart' as http;
 
 class AuthService {
   // static const String baseUrl = 'http://67.217.244.6/api';
-  static const String baseUrl = 'http://localhost:8001/api';
+  // static const String baseUrl = 'http://localhost:8001/api';
+  static const String baseUrl = 'https://api.markahendricks.com/api';
   static const FlutterSecureStorage _storage = FlutterSecureStorage();
 
   static const String accessTokenKey = 'access_token';
