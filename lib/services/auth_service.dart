@@ -1,10 +1,9 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
 class AuthService {
-  // static const String baseUrl = 'http://67.217.244.6/api';
-  // static const String baseUrl = 'http://localhost:8001/api';
   static const String baseUrl = 'https://api.markahendricks.com/api';
   static const FlutterSecureStorage _storage = FlutterSecureStorage();
 
@@ -17,51 +16,75 @@ class AuthService {
     required String email,
     required String password,
   }) async {
-    final Uri url = Uri.parse('$baseUrl/register/');
+    try {
+      final Uri url = Uri.parse('$baseUrl/register/');
 
-    final http.Response response = await http.post(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'username': username,
-        'email': email,
-        'password': password,
-      }),
-    );
+      final http.Response response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'username': username,
+          'email': email,
+          'password': password,
+        }),
+      );
 
-    return response.statusCode == 201;
+      if (kDebugMode) {
+        debugPrint('REGISTER STATUS: ${response.statusCode}');
+        debugPrint('REGISTER BODY: ${response.body}');
+      }
+
+      return response.statusCode == 201;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('REGISTER ERROR: $e');
+      }
+      rethrow;
+    }
   }
 
   Future<bool> login({
     required String username,
     required String password,
   }) async {
-    final Uri url = Uri.parse('$baseUrl/token/');
+    try {
+      final Uri url = Uri.parse('$baseUrl/token/');
 
-    final http.Response response = await http.post(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'username': username,
-        'password': password,
-      }),
-    );
+      final http.Response response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'username': username,
+          'password': password,
+        }),
+      );
 
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> data = jsonDecode(response.body);
+      if (kDebugMode) {
+        debugPrint('LOGIN STATUS: ${response.statusCode}');
+        debugPrint('LOGIN BODY: ${response.body}');
+      }
 
-      await _storage.write(key: accessTokenKey, value: data['access']);
-      await _storage.write(key: refreshTokenKey, value: data['refresh']);
-      await _storage.write(key: usernameKey, value: username);
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
 
-      return true;
+        await _storage.write(key: accessTokenKey, value: data['access']);
+        await _storage.write(key: refreshTokenKey, value: data['refresh']);
+        await _storage.write(key: usernameKey, value: username);
+
+        return true;
+      }
+
+      return false;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('LOGIN ERROR: $e');
+      }
+      rethrow;
     }
-
-    return false;
   }
 
   Future<void> logout() async {
@@ -88,30 +111,42 @@ class AuthService {
   }
 
   Future<bool> refreshAccessToken() async {
-    final String? refreshToken = await getRefreshToken();
+    try {
+      final String? refreshToken = await getRefreshToken();
 
-    if (refreshToken == null) {
+      if (refreshToken == null) {
+        return false;
+      }
+
+      final Uri url = Uri.parse('$baseUrl/token/refresh/');
+
+      final http.Response response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'refresh': refreshToken,
+        }),
+      );
+
+      if (kDebugMode) {
+        debugPrint('REFRESH STATUS: ${response.statusCode}');
+        debugPrint('REFRESH BODY: ${response.body}');
+      }
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        await _storage.write(key: accessTokenKey, value: data['access']);
+        return true;
+      }
+
+      return false;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('REFRESH ERROR: $e');
+      }
       return false;
     }
-
-    final Uri url = Uri.parse('$baseUrl/token/refresh/');
-
-    final http.Response response = await http.post(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'refresh': refreshToken,
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> data = jsonDecode(response.body);
-      await _storage.write(key: accessTokenKey, value: data['access']);
-      return true;
-    }
-
-    return false;
   }
 }

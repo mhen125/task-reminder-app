@@ -31,28 +31,39 @@ class _LoginScreenState extends State<LoginScreen> {
       _errorMessage = null;
     });
 
-    final bool success = await _authService.login(
-      username: _usernameController.text.trim(),
-      password: _passwordController.text,
-    );
-
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    if (success) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => const TaskListScreen(),
-        ),
+    try {
+      final bool success = await _authService.login(
+        username: _usernameController.text.trim(),
+        password: _passwordController.text,
       );
-    } else {
+
+      if (!mounted) {
+        return;
+      }
+
       setState(() {
-        _errorMessage = 'Login failed. Check your username and password.';
+        _isLoading = false;
+      });
+
+      if (success) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => const TaskListScreen(),
+          ),
+        );
+      } else {
+        setState(() {
+          _errorMessage = 'Login failed. Check your username and password.';
+        });
+      }
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Login error: $e';
       });
     }
   }
@@ -103,7 +114,11 @@ class _LoginScreenState extends State<LoginScreen> {
               child: ElevatedButton(
                 onPressed: _isLoading ? null : _login,
                 child: _isLoading
-                    ? const CircularProgressIndicator()
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
                     : const Text('Login'),
               ),
             ),
