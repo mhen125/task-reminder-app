@@ -4,7 +4,12 @@ import 'register_screen.dart';
 import 'task_list_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final String? sessionMessage;
+
+  const LoginScreen({
+    super.key,
+    this.sessionMessage,
+  });
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -17,6 +22,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _isLoading = false;
   String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _errorMessage = widget.sessionMessage;
+  }
 
   @override
   void dispose() {
@@ -41,10 +52,6 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      setState(() {
-        _isLoading = false;
-      });
-
       if (success) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
@@ -53,6 +60,7 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       } else {
         setState(() {
+          _isLoading = false;
           _errorMessage = 'Login failed. Check your username and password.';
         });
       }
@@ -63,7 +71,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Login error: $e';
+        _errorMessage = 'Unable to sign in right now. Please try again.';
       });
     }
   }
@@ -78,6 +86,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isSessionMessage =
+        widget.sessionMessage != null &&
+        _errorMessage == widget.sessionMessage;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Login'),
@@ -86,6 +98,31 @@ class _LoginScreenState extends State<LoginScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
+            if (_errorMessage != null)
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isSessionMessage
+                      ? Colors.orange.shade50
+                      : Colors.red.shade50,
+                  border: Border.all(
+                    color: isSessionMessage
+                        ? Colors.orange.shade300
+                        : Colors.red.shade300,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  _errorMessage!,
+                  style: TextStyle(
+                    color: isSessionMessage
+                        ? Colors.orange.shade900
+                        : Colors.red.shade900,
+                  ),
+                ),
+              ),
             TextField(
               controller: _usernameController,
               decoration: const InputDecoration(
@@ -101,14 +138,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            if (_errorMessage != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Text(
-                  _errorMessage!,
-                  style: const TextStyle(color: Colors.red),
-                ),
-              ),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(

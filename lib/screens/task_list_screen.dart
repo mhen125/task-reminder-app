@@ -27,6 +27,21 @@ class _TaskListScreenState extends State<TaskListScreen> {
     _loadTasks();
   }
 
+  void _redirectToLoginWithSessionMessage([String? message]) {
+    if (!mounted) {
+      return;
+    }
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (_) => LoginScreen(
+          sessionMessage: message ?? 'Your session expired. Please sign in again.',
+        ),
+      ),
+      (route) => false,
+    );
+  }
+
   Future<void> _loadTasks() async {
     setState(() {
       _isLoading = true;
@@ -44,13 +59,21 @@ class _TaskListScreenState extends State<TaskListScreen> {
         _tasks = tasks;
         _isLoading = false;
       });
+    } on SessionExpiredException catch (e) {
+      await _authService.logout();
+
+      if (!mounted) {
+        return;
+      }
+
+      _redirectToLoginWithSessionMessage(e.message);
     } catch (e) {
       if (!mounted) {
         return;
       }
 
       setState(() {
-        _errorMessage = e.toString();
+        _errorMessage = 'Unable to load tasks right now. Please try again.';
         _isLoading = false;
       });
     }
@@ -85,13 +108,23 @@ class _TaskListScreenState extends State<TaskListScreen> {
       final Task updatedTask = task.copyWith(completed: !task.completed);
       await _apiService.updateTask(updatedTask);
       await _loadTasks();
+    } on SessionExpiredException catch (e) {
+      await _authService.logout();
+
+      if (!mounted) {
+        return;
+      }
+
+      _redirectToLoginWithSessionMessage(e.message);
     } catch (e) {
       if (!mounted) {
         return;
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Update failed: $e')),
+        const SnackBar(
+          content: Text('Unable to update the task. Please try again.'),
+        ),
       );
     }
   }
@@ -100,13 +133,23 @@ class _TaskListScreenState extends State<TaskListScreen> {
     try {
       await _apiService.deleteTask(task.id);
       await _loadTasks();
+    } on SessionExpiredException catch (e) {
+      await _authService.logout();
+
+      if (!mounted) {
+        return;
+      }
+
+      _redirectToLoginWithSessionMessage(e.message);
     } catch (e) {
       if (!mounted) {
         return;
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Delete failed: $e')),
+        const SnackBar(
+          content: Text('Unable to delete the task. Please try again.'),
+        ),
       );
     }
   }
@@ -170,7 +213,10 @@ class _TaskListScreenState extends State<TaskListScreen> {
               ? Center(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
-                    child: Text(_errorMessage!),
+                    child: Text(
+                      _errorMessage!,
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                 )
               : _tasks.isEmpty

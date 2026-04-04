@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/task.dart';
 import '../services/api_service.dart';
+import '../services/auth_service.dart';
+import 'login_screen.dart';
 
 class TaskFormScreen extends StatefulWidget {
   final Task? task;
@@ -16,6 +18,7 @@ class TaskFormScreen extends StatefulWidget {
 
 class _TaskFormScreenState extends State<TaskFormScreen> {
   final ApiService _apiService = ApiService();
+  final AuthService _authService = AuthService();
 
   late final TextEditingController _titleController;
   late final TextEditingController _descriptionController;
@@ -39,10 +42,15 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
     final Task? task = widget.task;
 
     _titleController = TextEditingController(text: task?.title ?? '');
-    _descriptionController = TextEditingController(text: task?.description ?? '');
-    _categoryController = TextEditingController(text: task?.category ?? 'General');
+    _descriptionController = TextEditingController(
+      text: task?.description ?? '',
+    );
+    _categoryController = TextEditingController(
+      text: task?.category ?? 'General',
+    );
 
-    _selectedDueAt = task?.dueAt ?? DateTime.now().add(const Duration(hours: 1));
+    _selectedDueAt =
+        task?.dueAt ?? DateTime.now().add(const Duration(hours: 1));
     _selectedPriority = task?.priority ?? 'low';
     _completed = task?.completed ?? false;
   }
@@ -53,6 +61,22 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
     _descriptionController.dispose();
     _categoryController.dispose();
     super.dispose();
+  }
+
+  void _redirectToLoginWithSessionMessage([String? message]) {
+    if (!mounted) {
+      return;
+    }
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (_) => LoginScreen(
+          sessionMessage:
+              message ?? 'Your session expired. Please sign in again.',
+        ),
+      ),
+      (route) => false,
+    );
   }
 
   Future<void> _pickDateTime() async {
@@ -139,15 +163,28 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
       }
 
       Navigator.of(context).pop(true);
+    } on SessionExpiredException catch (e) {
+      await _authService.logout();
+
+      if (!mounted) {
+        return;
+      }
+
+      _redirectToLoginWithSessionMessage(e.message);
     } catch (e) {
       if (!mounted) {
         return;
       }
 
       setState(() {
-        _errorMessage = 'Failed to save task: $e';
-        _isSaving = false;
+        _errorMessage = 'Unable to save the task. Please try again.';
       });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
     }
   }
 
@@ -265,7 +302,11 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                 child: ElevatedButton(
                   onPressed: _isSaving ? null : _saveTask,
                   child: _isSaving
-                      ? const CircularProgressIndicator()
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
                       : Text(_isEditing ? 'Save Changes' : 'Create Task'),
                 ),
               ),

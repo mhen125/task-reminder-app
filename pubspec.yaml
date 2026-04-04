@@ -1,5 +1,5 @@
 name: task_reminder_app
-description: "A Flutter task reminder app with categories, priorities, due dates, and Firebase integration."
+description: "A Flutter task reminder app with categories, priorities, due dates, and MariaDB integration."
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -18,6 +18,25 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.3
+  flutter_native_splash: ^2.4.1
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/icons/
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/app_icon.png"
+  remove_alpha_ios: true
+
+flutter_native_splash:
+  color: "#3F51B5"
+  image: assets/icons/app_icon.png
+  android: true
+  ios: true
+  android_12:
+    color: "#3F51B5"
+    image: assets/icons/app_icon.png

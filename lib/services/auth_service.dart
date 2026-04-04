@@ -3,6 +3,17 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
+class SessionExpiredException implements Exception {
+  final String message;
+
+  SessionExpiredException([
+    this.message = 'Your session expired. Please sign in again.',
+  ]);
+
+  @override
+  String toString() => message;
+}
+
 class AuthService {
   static const String baseUrl = 'https://api.markahendricks.com/api';
   static const FlutterSecureStorage _storage = FlutterSecureStorage();
@@ -114,7 +125,7 @@ class AuthService {
     try {
       final String? refreshToken = await getRefreshToken();
 
-      if (refreshToken == null) {
+      if (refreshToken == null || refreshToken.isEmpty) {
         return false;
       }
 
@@ -148,5 +159,133 @@ class AuthService {
       }
       return false;
     }
+  }
+
+  Future<Map<String, String>> _authorizedHeaders() async {
+    final String? accessToken = await getAccessToken();
+
+    return <String, String>{
+      'Content-Type': 'application/json',
+      if (accessToken != null && accessToken.isNotEmpty)
+        'Authorization': 'Bearer $accessToken',
+    };
+  }
+
+  Future<http.Response> authenticatedGet(String endpoint) async {
+    final Uri url = Uri.parse('$baseUrl$endpoint');
+
+    http.Response response = await http.get(
+      url,
+      headers: await _authorizedHeaders(),
+    );
+
+    if (response.statusCode == 401) {
+      final bool refreshed = await refreshAccessToken();
+
+      if (refreshed) {
+        response = await http.get(
+          url,
+          headers: await _authorizedHeaders(),
+        );
+      }
+    }
+
+    if (response.statusCode == 401) {
+      await logout();
+      throw SessionExpiredException();
+    }
+
+    return response;
+  }
+
+  Future<http.Response> authenticatedPost(
+    String endpoint, {
+    Map<String, dynamic>? body,
+  }) async {
+    final Uri url = Uri.parse('$baseUrl$endpoint');
+
+    http.Response response = await http.post(
+      url,
+      headers: await _authorizedHeaders(),
+      body: body != null ? jsonEncode(body) : null,
+    );
+
+    if (response.statusCode == 401) {
+      final bool refreshed = await refreshAccessToken();
+
+      if (refreshed) {
+        response = await http.post(
+          url,
+          headers: await _authorizedHeaders(),
+          body: body != null ? jsonEncode(body) : null,
+        );
+      }
+    }
+
+    if (response.statusCode == 401) {
+      await logout();
+      throw SessionExpiredException();
+    }
+
+    return response;
+  }
+
+  Future<http.Response> authenticatedPut(
+    String endpoint, {
+    Map<String, dynamic>? body,
+  }) async {
+    final Uri url = Uri.parse('$baseUrl$endpoint');
+
+    http.Response response = await http.put(
+      url,
+      headers: await _authorizedHeaders(),
+      body: body != null ? jsonEncode(body) : null,
+    );
+
+    if (response.statusCode == 401) {
+      final bool refreshed = await refreshAccessToken();
+
+      if (refreshed) {
+        response = await http.put(
+          url,
+          headers: await _authorizedHeaders(),
+          body: body != null ? jsonEncode(body) : null,
+        );
+      }
+    }
+
+    if (response.statusCode == 401) {
+      await logout();
+      throw SessionExpiredException();
+    }
+
+    return response;
+  }
+
+  Future<http.Response> authenticatedDelete(String endpoint) async {
+    final Uri url = Uri.parse('$baseUrl$endpoint');
+
+    http.Response response = await http.delete(
+      url,
+      headers: await _authorizedHeaders(),
+    );
+
+    if (response.statusCode == 401) {
+      final bool refreshed = await refreshAccessToken();
+
+      if (refreshed) {
+        response = await http.delete(
+          url,
+          headers: await _authorizedHeaders(),
+        );
+      }
+    }
+
+    if (response.statusCode == 401) {
+      await logout();
+      throw SessionExpiredException();
+    }
+
+    return response;
   }
 }
