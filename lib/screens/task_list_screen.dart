@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-
+import 'package:intl/intl.dart';
 import '../models/task.dart';
-import '../services/firestore_task_service.dart';
-import '../widgets/task_dialog.dart';
-import '../widgets/task_list_tile.dart';
+import '../services/api_service.dart';
+import '../services/auth_service.dart';
+import 'login_screen.dart';
+import 'task_form_screen.dart';
 
 class TaskListScreen extends StatefulWidget {
   const TaskListScreen({super.key});
@@ -13,60 +14,177 @@ class TaskListScreen extends StatefulWidget {
 }
 
 class _TaskListScreenState extends State<TaskListScreen> {
-  final FirestoreTaskService _taskService = FirestoreTaskService();
+  final ApiService _apiService = ApiService();
+  final AuthService _authService = AuthService();
 
-  TaskCategory? _selectedCategory;
-  Priority? _selectedPriority;
-  bool _showCompletedTasks = false;
+  bool _isLoading = true;
+  String? _errorMessage;
+  List<Task> _tasks = [];
 
-  List<Task> _applyFilters(List<Task> tasks) {
-    List<Task> filtered = List<Task>.from(tasks);
-
-    if (_selectedCategory != null) {
-      filtered =
-          filtered.where((task) => task.category == _selectedCategory).toList();
-    }
-
-    if (_selectedPriority != null) {
-      filtered =
-          filtered.where((task) => task.priority == _selectedPriority).toList();
-    }
-
-    if (!_showCompletedTasks) {
-      filtered = filtered.where((task) => !task.isDone).toList();
-    }
-
-    filtered.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    return filtered;
+  @override
+  void initState() {
+    super.initState();
+    _loadTasks();
   }
 
-  void _showTaskDialog(BuildContext context, {Task? task}) {
-    showDialog(
-      context: context,
-      builder: (context) => TaskDialog(
-        task: task,
-        onSave: (newTask) async {
-          if (task == null) {
-            await _taskService.addTask(newTask);
-          } else {
-            await _taskService.updateTask(newTask);
-          }
-        },
+  void _redirectToLoginWithSessionMessage([String? message]) {
+    if (!mounted) {
+      return;
+    }
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (_) => LoginScreen(
+          sessionMessage: message ?? 'Your session expired. Please sign in again.',
+        ),
+      ),
+      (route) => false,
+    );
+  }
+
+  Future<void> _loadTasks() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final List<Task> tasks = await _apiService.getTasks();
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _tasks = tasks;
+        _isLoading = false;
+      });
+    } on SessionExpiredException catch (e) {
+      await _authService.logout();
+
+      if (!mounted) {
+        return;
+      }
+
+      _redirectToLoginWithSessionMessage(e.message);
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _errorMessage = 'Unable to load tasks right now. Please try again.';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _openAddTaskScreen() async {
+    final bool? changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => const TaskFormScreen(),
+      ),
+    );
+
+    if (changed == true) {
+      await _loadTasks();
+    }
+  }
+
+  Future<void> _openEditTaskScreen(Task task) async {
+    final bool? changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => TaskFormScreen(task: task),
+      ),
+    );
+
+    if (changed == true) {
+      await _loadTasks();
+    }
+  }
+
+  Future<void> _toggleTaskCompleted(Task task) async {
+    try {
+      final Task updatedTask = task.copyWith(completed: !task.completed);
+      await _apiService.updateTask(updatedTask);
+      await _loadTasks();
+    } on SessionExpiredException catch (e) {
+      await _authService.logout();
+
+      if (!mounted) {
+        return;
+      }
+
+      _redirectToLoginWithSessionMessage(e.message);
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to update the task. Please try again.'),
+        ),
+      );
+    }
+  }
+
+  Future<void> _deleteTask(Task task) async {
+    try {
+      await _apiService.deleteTask(task.id);
+      await _loadTasks();
+    } on SessionExpiredException catch (e) {
+      await _authService.logout();
+
+      if (!mounted) {
+        return;
+      }
+
+      _redirectToLoginWithSessionMessage(e.message);
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to delete the task. Please try again.'),
+        ),
+      );
+    }
+  }
+
+  Future<void> _logout() async {
+    await _authService.logout();
+
+    if (!mounted) {
+      return;
+    }
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => const LoginScreen(),
       ),
     );
   }
 
-  Color _getPriorityColor(Priority priority) {
-    switch (priority) {
-      case Priority.low:
-        return Colors.green;
-      case Priority.medium:
-        return Colors.orange;
-      case Priority.high:
+  String _formatDate(DateTime dateTime) {
+    return DateFormat('MMM d, yyyy h:mm a').format(dateTime.toLocal());
+  }
+
+  Color _priorityColor(String priority) {
+    switch (priority.toLowerCase()) {
+      case 'high':
         return Colors.red;
-      case Priority.urgent:
-        return Colors.purple;
+      case 'medium':
+        return Colors.orange;
+      default:
+        return Colors.blue;
     }
+  }
+
+  IconData _statusIcon(bool completed) {
+    return completed ? Icons.check_circle : Icons.radio_button_unchecked;
   }
 
   @override
@@ -74,180 +192,123 @@ class _TaskListScreenState extends State<TaskListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Tasks'),
-        elevation: 2,
         actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.filter_list),
-            onSelected: (value) {
-              setState(() {
-                if (value == 'show_completed') {
-                  _showCompletedTasks = !_showCompletedTasks;
-                }
-              });
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'show_completed',
-                child: Row(
-                  children: [
-                    Icon(
-                      _showCompletedTasks
-                          ? Icons.check_box
-                          : Icons.check_box_outline_blank,
-                    ),
-                    const SizedBox(width: 8),
-                    const Text('Show Completed'),
-                  ],
-                ),
-              ),
-            ],
+          IconButton(
+            onPressed: _loadTasks,
+            icon: const Icon(Icons.refresh),
+          ),
+          IconButton(
+            onPressed: _logout,
+            icon: const Icon(Icons.logout),
           ),
         ],
       ),
-      body: StreamBuilder<List<Task>>(
-        stream: _taskService.streamTasks(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Text(
-                  'Error loading tasks:\n${snapshot.error}',
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            );
-          }
-
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          }
-
-          final allTasks = snapshot.data ?? <Task>[];
-          final filteredTasks = _applyFilters(allTasks);
-
-          return Column(
-            children: [
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  children: [
-                    ...TaskCategory.values.map((category) {
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8.0),
-                        child: FilterChip(
-                          label: Text(category.label),
-                          selected: _selectedCategory == category,
-                          onSelected: (selected) {
-                            setState(() {
-                              _selectedCategory = selected ? category : null;
-                            });
-                          },
-                        ),
-                      );
-                    }),
-                    const SizedBox(width: 8),
-                    ...Priority.values.map((priority) {
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8.0),
-                        child: FilterChip(
-                          label: Text(priority.label),
-                          selected: _selectedPriority == priority,
-                          onSelected: (selected) {
-                            setState(() {
-                              _selectedPriority = selected ? priority : null;
-                            });
-                          },
-                          backgroundColor:
-                              _getPriorityColor(priority).withValues(alpha: 0.2),
-                        ),
-                      );
-                    }),
-                  ],
-                ),
-              ),
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '${filteredTasks.length} ${filteredTasks.length == 1 ? 'task' : 'tasks'}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                        fontWeight: FontWeight.w500,
-                      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _openAddTaskScreen,
+        child: const Icon(Icons.add),
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _errorMessage != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(
+                      _errorMessage!,
+                      textAlign: TextAlign.center,
                     ),
-                    if (_selectedCategory != null || _selectedPriority != null)
-                      TextButton.icon(
-                        onPressed: () {
-                          setState(() {
-                            _selectedCategory = null;
-                            _selectedPriority = null;
-                          });
-                        },
-                        icon: const Icon(Icons.clear, size: 16),
-                        label: const Text('Clear filters'),
-                      ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: filteredTasks.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.task_alt,
-                              size: 64,
-                              color: Colors.grey[300],
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              allTasks.isEmpty
-                                  ? 'No tasks yet.\nTap + to add one!'
-                                  : 'No tasks match your filters',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.only(bottom: 80),
-                        itemCount: filteredTasks.length,
-                        itemBuilder: (context, index) {
-                          final task = filteredTasks[index];
+                  ),
+                )
+              : _tasks.isEmpty
+                  ? const Center(
+                      child: Text('No tasks found.'),
+                    )
+                  : ListView.builder(
+                      itemCount: _tasks.length,
+                      itemBuilder: (context, index) {
+                        final Task task = _tasks[index];
 
-                          return TaskListTile(
-                            task: task,
-                            onToggle: () => _taskService.toggleTaskCompletion(task),
-                            onDelete: () => _taskService.deleteTask(task.id),
-                            onEdit: () => _showTaskDialog(context, task: task),
-                            onPriorityChange: (newPriority) =>
-                                _taskService.updateTaskPriority(task, newPriority),
-                          );
-                        },
-                      ),
-              ),
-            ],
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showTaskDialog(context),
-        icon: const Icon(Icons.add),
-        label: const Text('Add Task'),
-      ),
+                        return Card(
+                          margin: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          child: ListTile(
+                            leading: Icon(
+                              _statusIcon(task.completed),
+                              color: task.completed ? Colors.green : null,
+                            ),
+                            title: Text(task.title),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (task.description != null &&
+                                    task.description!.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4),
+                                    child: Text(task.description!),
+                                  ),
+                                const SizedBox(height: 6),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 4,
+                                  children: [
+                                    Chip(
+                                      label: Text(task.category),
+                                      visualDensity: VisualDensity.compact,
+                                    ),
+                                    Chip(
+                                      label: Text(task.priority),
+                                      visualDensity: VisualDensity.compact,
+                                      labelStyle: TextStyle(
+                                        color: _priorityColor(task.priority),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Text('Due: ${_formatDate(task.dueAt)}'),
+                                const SizedBox(height: 4),
+                                Text(
+                                  task.completed ? 'Completed' : 'Incomplete',
+                                ),
+                              ],
+                            ),
+                            onTap: () => _openEditTaskScreen(task),
+                            trailing: PopupMenuButton<String>(
+                              onSelected: (value) {
+                                if (value == 'edit') {
+                                  _openEditTaskScreen(task);
+                                } else if (value == 'toggle') {
+                                  _toggleTaskCompleted(task);
+                                } else if (value == 'delete') {
+                                  _deleteTask(task);
+                                }
+                              },
+                              itemBuilder: (context) => [
+                                const PopupMenuItem<String>(
+                                  value: 'edit',
+                                  child: Text('Edit'),
+                                ),
+                                PopupMenuItem<String>(
+                                  value: 'toggle',
+                                  child: Text(
+                                    task.completed
+                                        ? 'Mark Incomplete'
+                                        : 'Mark Complete',
+                                  ),
+                                ),
+                                const PopupMenuItem<String>(
+                                  value: 'delete',
+                                  child: Text('Delete'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
     );
   }
 }

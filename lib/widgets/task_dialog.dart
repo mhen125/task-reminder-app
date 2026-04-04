@@ -22,6 +22,8 @@ class _TaskDialogState extends State<TaskDialog> {
   late TaskCategory _selectedCategory;
   late Priority _selectedPriority;
   DateTime? _selectedDueDate;
+  bool _agingEnabled = true;
+  int _escalationThresholdDays = 3;
   bool _isSaving = false;
 
   @override
@@ -33,6 +35,8 @@ class _TaskDialogState extends State<TaskDialog> {
     _selectedCategory = widget.task?.category ?? TaskCategory.personal;
     _selectedPriority = widget.task?.priority ?? Priority.medium;
     _selectedDueDate = widget.task?.dueDate;
+    _agingEnabled = widget.task?.agingEnabled ?? true;
+    _escalationThresholdDays = widget.task?.escalationThresholdDays ?? 3;
   }
 
   Future<void> _save() async {
@@ -57,6 +61,9 @@ class _TaskDialogState extends State<TaskDialog> {
       dueDate: _selectedDueDate,
       isDone: widget.task?.isDone ?? false,
       completedAt: widget.task?.completedAt,
+      agingEnabled: _agingEnabled,
+      escalationThresholdDays: _escalationThresholdDays,
+      lastEscalatedAt: widget.task?.lastEscalatedAt,
     );
 
     await widget.onSave(newTask);
@@ -156,6 +163,41 @@ class _TaskDialogState extends State<TaskDialog> {
                   _selectedPriority = value;
                 });
               },
+            ),
+            const SizedBox(height: 16),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Enable automatic aging'),
+              value: _agingEnabled,
+              onChanged: _isSaving
+                  ? null
+                  : (value) {
+                      setState(() {
+                        _agingEnabled = value;
+                      });
+                    },
+            ),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<int>(
+              initialValue: _escalationThresholdDays,
+              decoration: const InputDecoration(
+                labelText: 'Escalate every N days',
+                border: OutlineInputBorder(),
+              ),
+              items: const [1, 2, 3, 5, 7, 14].map((days) {
+                return DropdownMenuItem<int>(
+                  value: days,
+                  child: Text('$days day${days == 1 ? '' : 's'}'),
+                );
+              }).toList(),
+              onChanged: _isSaving
+                  ? null
+                  : (value) {
+                      if (value == null) return;
+                      setState(() {
+                        _escalationThresholdDays = value;
+                      });
+                    },
             ),
             const SizedBox(height: 16),
             OutlinedButton.icon(
