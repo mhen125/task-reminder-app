@@ -17,6 +17,9 @@ class _TaskListScreenState extends State<TaskListScreen> {
   final ApiService _apiService = ApiService();
   final AuthService _authService = AuthService();
 
+  String _selectedSort = 'none';
+  String _selectedFilter = 'none';
+
   bool _isLoading = true;
   String? _errorMessage;
   List<Task> _tasks = [];
@@ -35,7 +38,8 @@ class _TaskListScreenState extends State<TaskListScreen> {
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
         builder: (_) => LoginScreen(
-          sessionMessage: message ?? 'Your session expired. Please sign in again.',
+          sessionMessage:
+              message ?? 'Your session expired. Please sign in again.',
         ),
       ),
       (route) => false,
@@ -80,11 +84,9 @@ class _TaskListScreenState extends State<TaskListScreen> {
   }
 
   Future<void> _openAddTaskScreen() async {
-    final bool? changed = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (_) => const TaskFormScreen(),
-      ),
-    );
+    final bool? changed = await Navigator.of(
+      context,
+    ).push<bool>(MaterialPageRoute(builder: (_) => const TaskFormScreen()));
 
     if (changed == true) {
       await _loadTasks();
@@ -92,11 +94,9 @@ class _TaskListScreenState extends State<TaskListScreen> {
   }
 
   Future<void> _openEditTaskScreen(Task task) async {
-    final bool? changed = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (_) => TaskFormScreen(task: task),
-      ),
-    );
+    final bool? changed = await Navigator.of(
+      context,
+    ).push<bool>(MaterialPageRoute(builder: (_) => TaskFormScreen(task: task)));
 
     if (changed == true) {
       await _loadTasks();
@@ -161,11 +161,9 @@ class _TaskListScreenState extends State<TaskListScreen> {
       return;
     }
 
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => const LoginScreen(),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).pushReplacement(MaterialPageRoute(builder: (_) => const LoginScreen()));
   }
 
   String _formatDate(DateTime dateTime) {
@@ -187,128 +185,183 @@ class _TaskListScreenState extends State<TaskListScreen> {
     return completed ? Icons.check_circle : Icons.radio_button_unchecked;
   }
 
+  Widget _buildControlBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: DropdownButtonFormField<String>(
+              value: _selectedSort,
+              decoration: const InputDecoration(
+                labelText: 'Sort',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+              items: const [
+                DropdownMenuItem(value: 'none', child: Text('No sorting')),
+                DropdownMenuItem(
+                  value: 'placeholder1',
+                  child: Text('Option 1'),
+                ),
+              ],
+              onChanged: (value) {
+                if (value == null) return;
+                setState(() {
+                  _selectedSort = value;
+                });
+              },
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: DropdownButtonFormField<String>(
+              value: _selectedFilter,
+              decoration: const InputDecoration(
+                labelText: 'Filter',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+              items: const [
+                DropdownMenuItem(value: 'none', child: Text('No filter')),
+                DropdownMenuItem(
+                  value: 'placeholder1',
+                  child: Text('Option 1'),
+                ),
+              ],
+              onChanged: (value) {
+                if (value == null) return;
+                setState(() {
+                  _selectedFilter = value;
+                });
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBodyContent() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_errorMessage != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(_errorMessage!, textAlign: TextAlign.center),
+        ),
+      );
+    }
+
+    if (_tasks.isEmpty) {
+      return const Center(child: Text('No tasks found.'));
+    }
+
+    return ListView.builder(
+      itemCount: _tasks.length,
+      itemBuilder: (context, index) {
+        final Task task = _tasks[index];
+
+        // 👇 keep your existing ListTile code here
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: ListTile(
+            leading: Icon(
+              _statusIcon(task.completed),
+              color: task.completed ? Colors.green : null,
+            ),
+            title: Text(task.title),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (task.description != null && task.description!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(task.description!),
+                  ),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    Chip(
+                      label: Text(task.category),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    Chip(
+                      label: Text(task.priority),
+                      visualDensity: VisualDensity.compact,
+                      labelStyle: TextStyle(
+                        color: _priorityColor(task.priority),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text('Due: ${_formatDate(task.dueAt)}'),
+                const SizedBox(height: 4),
+                Text(task.completed ? 'Completed' : 'Incomplete'),
+              ],
+            ),
+            onTap: () => _openEditTaskScreen(task),
+            trailing: PopupMenuButton<String>(
+              onSelected: (value) {
+                if (value == 'edit') {
+                  _openEditTaskScreen(task);
+                } else if (value == 'toggle') {
+                  _toggleTaskCompleted(task);
+                } else if (value == 'delete') {
+                  _deleteTask(task);
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem<String>(value: 'edit', child: Text('Edit')),
+                PopupMenuItem<String>(
+                  value: 'toggle',
+                  child: Text(
+                    task.completed ? 'Mark Incomplete' : 'Mark Complete',
+                  ),
+                ),
+                const PopupMenuItem<String>(
+                  value: 'delete',
+                  child: Text('Delete'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Tasks'),
         actions: [
-          IconButton(
-            onPressed: _loadTasks,
-            icon: const Icon(Icons.refresh),
-          ),
-          IconButton(
-            onPressed: _logout,
-            icon: const Icon(Icons.logout),
-          ),
+          IconButton(onPressed: _loadTasks, icon: const Icon(Icons.refresh)),
+          IconButton(onPressed: _logout, icon: const Icon(Icons.logout)),
         ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _openAddTaskScreen,
         child: const Icon(Icons.add),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _errorMessage != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text(
-                      _errorMessage!,
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                )
-              : _tasks.isEmpty
-                  ? const Center(
-                      child: Text('No tasks found.'),
-                    )
-                  : ListView.builder(
-                      itemCount: _tasks.length,
-                      itemBuilder: (context, index) {
-                        final Task task = _tasks[index];
-
-                        return Card(
-                          margin: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          child: ListTile(
-                            leading: Icon(
-                              _statusIcon(task.completed),
-                              color: task.completed ? Colors.green : null,
-                            ),
-                            title: Text(task.title),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (task.description != null &&
-                                    task.description!.isNotEmpty)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 4),
-                                    child: Text(task.description!),
-                                  ),
-                                const SizedBox(height: 6),
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 4,
-                                  children: [
-                                    Chip(
-                                      label: Text(task.category),
-                                      visualDensity: VisualDensity.compact,
-                                    ),
-                                    Chip(
-                                      label: Text(task.priority),
-                                      visualDensity: VisualDensity.compact,
-                                      labelStyle: TextStyle(
-                                        color: _priorityColor(task.priority),
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 6),
-                                Text('Due: ${_formatDate(task.dueAt)}'),
-                                const SizedBox(height: 4),
-                                Text(
-                                  task.completed ? 'Completed' : 'Incomplete',
-                                ),
-                              ],
-                            ),
-                            onTap: () => _openEditTaskScreen(task),
-                            trailing: PopupMenuButton<String>(
-                              onSelected: (value) {
-                                if (value == 'edit') {
-                                  _openEditTaskScreen(task);
-                                } else if (value == 'toggle') {
-                                  _toggleTaskCompleted(task);
-                                } else if (value == 'delete') {
-                                  _deleteTask(task);
-                                }
-                              },
-                              itemBuilder: (context) => [
-                                const PopupMenuItem<String>(
-                                  value: 'edit',
-                                  child: Text('Edit'),
-                                ),
-                                PopupMenuItem<String>(
-                                  value: 'toggle',
-                                  child: Text(
-                                    task.completed
-                                        ? 'Mark Incomplete'
-                                        : 'Mark Complete',
-                                  ),
-                                ),
-                                const PopupMenuItem<String>(
-                                  value: 'delete',
-                                  child: Text('Delete'),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+      body: Column(
+        children: [
+          _buildControlBar(),
+          Expanded(child: _buildBodyContent()),
+        ],
+      ),
     );
   }
 }
