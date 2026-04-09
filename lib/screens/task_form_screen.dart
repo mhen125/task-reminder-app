@@ -7,10 +7,7 @@ import 'login_screen.dart';
 class TaskFormScreen extends StatefulWidget {
   final Task? task;
 
-  const TaskFormScreen({
-    super.key,
-    this.task,
-  });
+  const TaskFormScreen({super.key, this.task});
 
   @override
   State<TaskFormScreen> createState() => _TaskFormScreenState();
@@ -28,7 +25,6 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
 
   late DateTime _selectedDueAt;
   late String _selectedPriority;
-  late bool _completed;
 
   bool _isSaving = false;
   String? _errorMessage;
@@ -52,7 +48,6 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
     _selectedDueAt =
         task?.dueAt ?? DateTime.now().add(const Duration(hours: 1));
     _selectedPriority = task?.priority ?? 'low';
-    _completed = task?.completed ?? false;
   }
 
   @override
@@ -139,7 +134,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
               : _categoryController.text.trim(),
           dueAt: _selectedDueAt,
           priority: _selectedPriority,
-          completed: _completed,
+          completed: originalTask.completed,
         );
 
         await _apiService.updateTask(updatedTask);
@@ -151,7 +146,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
               : _descriptionController.text.trim(),
           dueAt: _selectedDueAt,
           priority: _selectedPriority,
-          completed: _completed,
+          completed: false,
           category: _categoryController.text.trim().isEmpty
               ? 'General'
               : _categoryController.text.trim(),
@@ -201,9 +196,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_isEditing ? 'Edit Task' : 'Add Task'),
-      ),
+      appBar: AppBar(title: Text(_isEditing ? 'Edit Task' : 'Add Task')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -212,9 +205,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
             children: [
               TextFormField(
                 controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Title',
-                ),
+                decoration: const InputDecoration(labelText: 'Title'),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Title is required.';
@@ -225,17 +216,13 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
               const SizedBox(height: 12),
               TextFormField(
                 controller: _descriptionController,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
-                ),
+                decoration: const InputDecoration(labelText: 'Description'),
                 maxLines: 3,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _categoryController,
-                decoration: const InputDecoration(
-                  labelText: 'Category',
-                ),
+                decoration: const InputDecoration(labelText: 'Category'),
               ),
               const SizedBox(height: 16),
               ListTile(
@@ -250,22 +237,11 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 initialValue: _selectedPriority,
-                decoration: const InputDecoration(
-                  labelText: 'Priority',
-                ),
+                decoration: const InputDecoration(labelText: 'Priority'),
                 items: const [
-                  DropdownMenuItem(
-                    value: 'low',
-                    child: Text('Low'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'medium',
-                    child: Text('Medium'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'high',
-                    child: Text('High'),
-                  ),
+                  DropdownMenuItem(value: 'low', child: Text('Low')),
+                  DropdownMenuItem(value: 'medium', child: Text('Medium')),
+                  DropdownMenuItem(value: 'high', child: Text('High')),
                 ],
                 onChanged: (value) {
                   if (value == null) {
@@ -274,17 +250,6 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
 
                   setState(() {
                     _selectedPriority = value;
-                  });
-                },
-              ),
-              const SizedBox(height: 16),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Completed'),
-                value: _completed,
-                onChanged: (value) {
-                  setState(() {
-                    _completed = value;
                   });
                 },
               ),
