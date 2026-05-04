@@ -93,8 +93,12 @@ Final project demo video:
 
 ### Login Screen
 
-<img src="screenshots/login.png" alt="Login Screen" style="max-width: 100%; max-height: 300px;">
-
+<img src="screenshots/login.png" id="screenshots" alt="Login Screen" style="max-width: 100%; max-height: 300px;">
+<style>
+  #screenshots {
+    max-height: 300px;
+    }
+</style>
 ### Register Screen
 
 <img src="screenshots/register.png" alt="Register Screen" style="max-height: 300px !important; width: auto;" />
