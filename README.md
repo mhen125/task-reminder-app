@@ -93,7 +93,7 @@ Final project demo video:
 
 ### Login Screen
 
-![Login Screen](screenshots/login.png) | height=300
+<img src="/mhen125/task-reminder-app/raw/main/screenshots/login.png" alt="Login Screen" style="max-width: 100%; max-height: 300px;">
 
 ### Register Screen
 
