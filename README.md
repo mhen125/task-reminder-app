@@ -94,23 +94,23 @@ Add screenshots or GIFs of the app below.
 
 ### Login Screen
 
-<img src="screenshots/login.png" alt="Login Screen" style="max-height: 500px; width: auto;" />
+<img src="screenshots/login.png" alt="Login Screen" style="max-height: 300px; width: auto;" />
 
 ### Register Screen
 
-<img src="screenshots/register.png" alt="Register Screen" style="max-height: 500px; width: auto;" />
+<img src="screenshots/register.png" alt="Register Screen" style="max-height: 300px; width: auto;" />
 
 ### Task List Screen
 
-<img src="screenshots/task-list.png" alt="Task List Screen" style="max-height: 500px; width: auto;" />
+<img src="screenshots/task-list.png" alt="Task List Screen" style="max-height: 300px; width: auto;" />
 
 ### Create Task Screen
 
-<img src="screenshots/create-task.png" alt="Create Task Screen" style="max-height: 500px; width: auto;" />
+<img src="screenshots/create-task.png" alt="Create Task Screen" style="max-height: 300px; width: auto;" />
 
 ### Django Admin Dashboard
 
-<img src="screenshots/admin-dashboard.png" alt="Admin Dashboard" style="max-height: 500px; width: auto;" />
+<img src="screenshots/admin-dashboard.png" alt="Admin Dashboard" style="max-height: 300px; width: auto;" />
 
 ---
 
