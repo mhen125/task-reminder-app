@@ -502,9 +502,10 @@ Potential improvements include:
 Add team member names here:
 
 - Mark Hendricks
-- Team Member 2
-- Team Member 3
-- Team Member 4
+- Anafiel Marie Abad
+- Sunwoo Lee
+- Diego Ugaz
+- Sebastian Barrera
 
 ---
 
