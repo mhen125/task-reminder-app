@@ -84,10 +84,7 @@ Final project demo video:
 
 > Add YouTube demo link here.
 
-Repository links:
 
-- Frontend Repository: `Add frontend GitHub repository link here`
-- Backend Repository: `Add backend GitHub repository link here`
 
 ---
 
@@ -97,23 +94,23 @@ Add screenshots or GIFs of the app below.
 
 ### Login Screen
 
-![Login Screen](screenshots/login.png)
+<img src="screenshots/login.png" alt="Login Screen" style="max-height: 500px; width: auto;" />
 
 ### Register Screen
 
-![Register Screen](screenshots/register.png)
+<img src="screenshots/register.png" alt="Register Screen" style="max-height: 500px; width: auto;" />
 
 ### Task List Screen
 
-![Task List Screen](screenshots/task-list.png)
+<img src="screenshots/task-list.png" alt="Task List Screen" style="max-height: 500px; width: auto;" />
 
 ### Create Task Screen
 
-![Create Task Screen](screenshots/create-task.png)
+<img src="screenshots/create-task.png" alt="Create Task Screen" style="max-height: 500px; width: auto;" />
 
 ### Django Admin Dashboard
 
-![Admin Dashboard](screenshots/admin-dashboard.png)
+<img src="screenshots/admin-dashboard.png" alt="Admin Dashboard" style="max-height: 500px; width: auto;" />
 
 ---
 
@@ -499,7 +496,6 @@ Potential improvements include:
 
 ## Team Members
 
-Add team member names here:
 
 - Mark Hendricks
 - Anafiel Marie Abad
