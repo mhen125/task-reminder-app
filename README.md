@@ -93,7 +93,7 @@ Final project demo video:
 
 ### Login Screen
 
-<img src="screenshots/login.png" alt="Login Screen" style="max-height: 300px !important; width: auto;" />
+![Login Screen](screenshots/login.png) | height=300
 
 ### Register Screen
 
